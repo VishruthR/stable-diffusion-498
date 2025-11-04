@@ -24,9 +24,9 @@ from transformers import AutoFeatureExtractor
 
 
 # load safety model
-safety_model_id = "models/ldm/safety_checker"
-safety_feature_extractor = AutoFeatureExtractor.from_pretrained(safety_model_id)
-safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
+# safety_model_id = "models/ldm/safety_checker"
+# safety_feature_extractor = AutoFeatureExtractor.from_pretrained(safety_model_id)
+# safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
 
 
 def chunk(it, size):
