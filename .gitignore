@@ -1,0 +1,7 @@
+**/__pycache__/**
+models/**
+
+Miniconda3-latest-Linux-x86_64.sh
+latent_diffusion.egg-info/
+outputs/
+src/
