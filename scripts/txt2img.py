@@ -241,7 +241,7 @@ def main():
         opt.ckpt = "models/ldm/text2img-large/model.ckpt"
         opt.outdir = "outputs/txt2img-samples-laion400m"
 
-    seed_everything(opt.seed)
+    # seed_everything(opt.seed)
 
     config = OmegaConf.load(f"{opt.config}")
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -288,6 +288,7 @@ def main():
     with torch.no_grad():
         with precision_scope("cuda"):
             with model.ema_scope():
+                torch.cuda.reset_peak_memory_stats()
                 tic = time.time()
                 all_samples = list()
                 for n in trange(opt.n_iter, desc="Sampling"):
@@ -345,6 +346,13 @@ def main():
 
     print(f"Your samples are ready and waiting for you here: \n{outpath} \n"
           f" \nEnjoy.")
+
+    print(f"Samples took {toc - tic:.2f} seconds")
+
+    current_mem = torch.cuda.memory_allocated() / (1024 ** 2)
+    peak_memory = torch.cuda.max_memory_allocated() / (1024 ** 2)
+    print(f"Current GPU memory allocated: {current_mem:.2f} MB")
+    print(f"Peak GPU memory allocated: {peak_memory:.2f} MB")
 
 
 if __name__ == "__main__":
