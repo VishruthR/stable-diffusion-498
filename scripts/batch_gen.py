@@ -254,10 +254,16 @@ def main():
     
     assert 0. <= opt.strength <= 1., 'can only work with strength in [0.0, 1.0]'
     t_enc = int(opt.strength * opt.ddim_steps)
+    if t_enc >= opt.ddim_steps:
+        t_enc = opt.ddim_steps - 1
     
     if batch_size > max_batch_size:
         print(f"Will generate {batch_size} images in multiple batches of up to {max_batch_size}")
         print(f"Using img2img with strength {opt.strength} (t_enc={t_enc}) for iterative generation")
+
+    time_to_first_batch = 0
+    time_between_batches = 0
+    num_batches = 0
 
     precision_scope = autocast if opt.precision == "autocast" else nullcontext
     with torch.no_grad():
@@ -265,9 +271,10 @@ def main():
             with model.ema_scope():
                 torch.cuda.reset_peak_memory_stats()
                 tic = time.time()
+                last_batch_time = tic
                 all_samples = list()
                 
-                for prompt in prompts_list:
+                for prompt_idx, prompt in enumerate(prompts_list):
                     for n in trange(opt.n_iter, desc="Sampling"):
                         # Initialize current samples list for this iteration
                         current_samples = []
@@ -277,6 +284,7 @@ def main():
                         # Generate images in batches until we reach n_samples
                         while images_generated < batch_size:
                             generation_round += 1
+                            num_batches += 1
                             # Determine how many images to generate in this batch
                             current_batch_size = min(max_batch_size, batch_size - images_generated)
                             
@@ -335,7 +343,7 @@ def main():
                                 
                                 # Denoise to generate new image
                                 samples = sampler.decode(
-                                    z_enc, c, t_enc,
+                                    z_enc, c, t_enc + 1,
                                     unconditional_guidance_scale=opt.scale,
                                     unconditional_conditioning=uc
                                 )
@@ -357,6 +365,13 @@ def main():
                             
                             images_generated += current_batch_size
                             round_end = time.time()
+
+                            if generation_round == 1 and n == 0 and prompt_idx == 0:
+                                time_to_first_batch = round_end - tic
+                            else:
+                                time_between_batches += round_end - last_batch_time
+                            last_batch_time = round_end
+
                             print(f"Generated {images_generated}/{batch_size} images (Round {generation_round} took {round_end - round_start:.2f} seconds)")
                         
                         # Add all samples from this iteration to all_samples
@@ -379,10 +394,11 @@ def main():
           f" \nEnjoy.")
     
     print(f"\nSamples took {toc - tic:.2f} seconds")
+
+    print(f"Time to first batch: {time_to_first_batch:.2f} seconds")
+    print(f"Avg time between batches: {time_between_batches / num_batches:.2f} seconds")
     
-    current_mem = torch.cuda.memory_allocated() / (1024 ** 2)
     peak_memory = torch.cuda.max_memory_allocated() / (1024 ** 2)
-    print(f"Current GPU memory allocated: {current_mem:.2f} MB")
     print(f"Peak GPU memory allocated: {peak_memory:.2f} MB")
 
 
