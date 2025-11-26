@@ -99,6 +99,16 @@ Adjust strength for step size 200
 - Peak GPU memory allocated: 12118.76 MB
 - TTFI: 66.12, TBB: 43.54
 
+Testing to see how image quality degrades as you generate more and more images
+
+100 images @ 512x512 with max batch size of 1, strength 0.75 (basically image gen from scratch): Image quality does not really degrade, though image variation was not great
+- Command: python scripts/batch_gen.py --prompt "a hyperrealistic photograph of a cat" --n_samples 100 --max_batch_size 1 --W 512 --H 512 --strength 0.75 --ddim_steps 50 --outdir outputs/test_100_images
+- Samples took 490.05 seconds
+- Peak GPU memory allocated: 8013.55 MB
+- TTFI: 6.96s, TBB: 4.73s
+
+Also tested different strengths using test_strength.sh. Only see significant variation with strengths > 0.8
+
 ### Old GPU
 
 #### Regular Generation
@@ -145,6 +155,12 @@ Less memory since you are working with smaller matrices
 - Batch size of 10 on 256x256 resolution works
 
 Less computation, since you are working with smaller matrices
+
+## General takeaways
+- Increasing resolution of image dramatically increased quality
+- Increasing denoising steps did not lead to an obvious increase in quality after 50 steps
+- Our approach to batch generation can save a lot of memory
+- Strength allows you to adjust TBB, TTFI is not super adjustable
 
 ### Next steps
 
